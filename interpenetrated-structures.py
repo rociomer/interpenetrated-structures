@@ -1,5 +1,5 @@
 from math import ceil, radians, cos, sin, sqrt
-import copy, glob, os, subprocess, time
+import copy, glob, os, subprocess, time, re
 
 ### TO DO: lose dependency on Zeo++
 ### TO DO: make code versatile, so that it could read fractional coordinates or Cartesian from a .cssr
@@ -15,7 +15,7 @@ import copy, glob, os, subprocess, time
 # shiftDostamce is the displacement used to generate the interpenetrated structures
 # overlapRadius is the hard-sphere radius used to determine if a trial structure has overlapping atoms
 
-shiftDistance, overlapRadius = 0.25, 1.05
+shiftDistance, overlapRadius = 0.5, 1.05
 
 def coordTranslation(x, y, z, oldList): # Translates atoms by set distance, wrapping them around if they go past the unit cell boundaries.
     newList = copy.deepcopy(oldList)
@@ -147,9 +147,14 @@ def generateHigherLevelInterpenetrated(shiftDistance, minIndices, maxLatticeVect
             with open(outputfile, 'a') as text: 
                 text.write("Overlap detected for " + str(n+1) + "-fold interpenetrated trial structure with indices " + str(higherLevelIndices) + "\n")
 
+def purge(dir, pattern):
+    for f in os.listdir(dir):
+        if re.search(pattern, f):
+            os.remove(os.path.join(dir, f))
+
 files = [f for f in os.listdir(".") if f.endswith(".cssr")] # cssr files
 for f in files:
-    outputfile=string(f[:-5]) + "_output.txt"
+    outputfile = str(f[:-5]) + "_output.txt"
     with open(outputfile, 'w') as text: 
         text.write("Beginning the program at " + str(time.localtime(None)) + "\n")
         text.write("Parameters: shiftDistance, overlapRadius = " + str(shiftDistance) + ", " + str(overlapRadius) + "\n")
@@ -166,25 +171,26 @@ for f in files:
     t0 = time.time()
     with open(outputfile, 'a') as text: 
         text.write("Generating interpenetrated structures and checking overlap\n")
-    minIndices = [int(ceil(latticeVector_a)), int(ceil(latticeVector_b)), int(ceil(latticeVector_c))]
-    minIndicesMagnitude = sqrt(minIndices[0]**2 + minIndices[1]**2 + minIndices[2]**2)
-    for n_a in range(int(ceil(latticeVector_a))):
-        for n_b in range(int(ceil(latticeVector_b))):
-            for n_c in range(int(ceil(latticeVector_c))):
+    minIndices = [int(ceil(latticeVector_a/shiftDistance)), int(ceil(latticeVector_b/shiftDistance)), int(ceil(latticeVector_c/shiftDistance))]
+    minIndicesMagnitude = sqrt((minIndices[0]*shiftDistance)**2 + (minIndices[1]*shiftDistance)**2 + (minIndices[2]*shiftDistance)**2)
+    for n_c in range(int(ceil(latticeVector_c/shiftDistance))):
+        for n_b in range(int(ceil(latticeVector_b/shiftDistance))):
+            for n_a in range(int(ceil(latticeVector_a/shiftDistance))):
                 trialIndices = [n_a, n_b, n_c]
-                IndicesMagnitude = sqrt((n_a*0.25)**2 + (n_b*0.25)**2 + (n_c*0.25)**2)
+                IndicesMagnitude = sqrt((n_a*shiftDistance)**2 + (n_b*shiftDistance)**2 + (n_c*shiftDistance)**2)
                 if IndicesMagnitude > minIndicesMagnitude:
                     break
-                elif IndicesMagnitude == minIndicesMagnitude && generateInterpenetrated(shiftDistance, trialIndices, overlapRadius, coordinatesArray) == True:
+                elif (IndicesMagnitude == minIndicesMagnitude) and (generateInterpenetrated(shiftDistance, trialIndices, overlapRadius, coordinatesArray) == True):
                     with open(outputfile, 'a') as text:
                         text.write("Same magnitude of displacement for trial structures " + str(trialIndices) + " and " + str(minIndices) + " (magnitude: " + str(IndicesMagnitude) + " A) \n")
-                        minIndices = trialIndices 
-                        minIndicesMagnitude = sqrt(minIndices[0]**2 + minIndices[1]**2 + minIndices[2]**2)
-                elif generateInterpenetrated(shiftDistance, trialIndices, overlapRadius, coordinatesArray) == True:
-                    minIndices = trialIndices 
-                    minIndicesMagnitude = sqrt(minIndices[0]**2 + minIndices[1]**2 + minIndices[2]**2)
+                        minIndices = list(trialIndices)
+                        minIndicesMagnitude = sqrt((minIndices[0]*shiftDistance)**2 + (minIndices[1]*shiftDistance)**2 + (minIndices[2]*shiftDistance)**2)
+                elif (IndicesMagnitude < minIndicesMagnitude) and (generateInterpenetrated(shiftDistance, trialIndices, overlapRadius, coordinatesArray) == True):
+                    minIndices = list(trialIndices)
+                    minIndicesMagnitude = sqrt((minIndices[0]*shiftDistance)**2 + (minIndices[1]*shiftDistance)**2 + (minIndices[2]*shiftDistance)**2)
                     with open(outputfile, 'a') as text:
                         text.write("New indices for best trial structure " + str(minIndices) + " \n")
+                        text.write("minIndicesMagnitude " + str(minIndicesMagnitude) + " \n")
                 else:
                     pass
     t1 = time.time()
@@ -201,6 +207,7 @@ for f in files:
             text.write("No successful interpenetrated structures found for " + str(f) + "\n")
     with open(outputfile, 'a') as text:
         text.write("Program complete at " + str(time.localtime(None)) + "\n")
+    # purge(., *trial*.cssr) 
 
 ### FOR DEBUGGING: uncomment three-lines below to converts all *.cssr files to cif format (including trial structures)
 #files = [f for f in os.listdir(".") if f.endswith(".cssr")]
