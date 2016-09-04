@@ -12,10 +12,10 @@ https://github.com/rociomer/interpenetrated-structures
 None
 
 ## Comments
-# TO DO
+###TO DO
 
 ## Instructions
-# TO DO: add instructions for how to use program
+###TO DO
 
 ## Description
 This program was written so as to facilitate the generation 
