@@ -6,16 +6,16 @@ Rocío Mercado
 Ray Fu
 
 ## Link 
-Code available online at https://github.com/rociomer/interpenetrated-structures
+https://github.com/rociomer/interpenetrated-structures
 
 ## Licence
 None
 
 ## Comments
-### TO DO: add 
+# TO DO
 
 ## Instructions
-### TO DO: add instructions for how to use program
+# TO DO: add instructions for how to use program
 
 ## Description
 This program was written so as to facilitate the generation 
