@@ -5,16 +5,15 @@ import copy, glob, os, subprocess, time
 ### TO DO: make code versatile, so that it could read fractional coordinates or Cartesian from a .cssr
 ### TO DO: Fix the description, as this program is not for using the surface area or pore volume anymore
 ### TO DO: print individual output files for each structure
+### TO DO: improve the output so that there is not too much info but also enough to debug
+### TO DO: delete .cif file conversion in script, write a SEPARATE python script to convert cifs to cssr using Zeo++
 
 # Program assumes that fractional coordinates are given.
-# n goes up to half the diameter of the largest included sphere.
 # Each axis is traversed independently.
 
 # SET VARIABLES HERE
-# dist is the displacement for the interpenetrated structure
-# radius is the hard-sphere radius used to determine if a trial structure has overlapping atoms
-# proberad is the radius used in computing the surface area of each trial structure
-# trials is the number of insertions used in computing the surface area of each structure
+# shiftDostamce is the displacement used to generate the interpenetrated structures
+# overlapRadius is the hard-sphere radius used to determine if a trial structure has overlapping atoms
 
 shiftDistance, overlapRadius = 0.25, 1.05
 
@@ -83,112 +82,128 @@ def checkOverlap(overlapRadius, list1, list2, a, b, c, alpha, beta, gamma): # Ch
                 return False
     return True
 
-def findMinDisplacement(filenames, a, b, c, disp_a, disp_b, disp_c): # Returns the indices of the framework with the minimum surface area.
-    fileSA = filenames[values.index(min(values))]
-    ultUnd = len(fileSA)-fileSA[::-1].find('_')-1
-    penultUnd = len(fileSA[0:ultUnd])-fileSA[0:ultUnd][::-1].find('_')-1
-    antepenultUnd = len(fileSA[0:penultUnd])-fileSA[0:penultUnd][::-1].find('_')-1
-    return [fileSA[antepenultUnd+1:penultUnd], fileSA[penultUnd+1:ultUnd], fileSA[ultUnd+1:-5]]
-
 def getLatticeVectors(file): # Returns the diameter of the largest included sphere in a framework.
      with open(file) as data:
          elements = data.readline().split()
          a = float(elements[0])
          b = float(elements[1])
          c = float(elements[2])
-     return a, b, c
+     return a, b, c 
 
-def generateInterpenetrated(shiftDistance, n_a, n_b, n_c, overlapRadius, coordinates): # Generates 2-interpenetrated structures.
+def generateInterpenetrated(shiftDistance, trialIndices, overlapRadius, coordinatesArray): # Generates 2-interpenetrated structures.
     # shiftDistance represents the distance by which we want the interpenetrated lattice to be translated
     # if two points on the structure are closer than 2*overlapRadius, then they are overlapping
-    newCoords = coordTranslation(shiftDistance/float(coordinates[0][0])*n_a, shiftDistance/float(coordinates[0][1])*n_b, shiftDistance/float(coordinates[0][2])*n_c, coordinates[4:]) # coordinate information
-    if checkOverlap(overlapRadius, newCoords, coordinates[4:], float(coordinates[0][0]), float(coordinates[0][1]), float(coordinates[0][2]), radians(float(coordinates[1][0])), radians(float(coordinates[1][1])), radians(float(coordinates[1][2]))):
-        print "No overlap detected for 2-fold interpenetrated trial structure " + str(n_a) + "_" + str(n_b) + "_" + str(n_c) + "."
-        with open("output.txt", 'a') as text: 
-            text.write("No overlap detected for 2-fold interpenetrated trial structure " + str(n_a) + "_" + str(n_b) + "_" + str(n_c) + "\n")
-        with open(f[:-5] + "_trial_" + str(n_a) + "_" + str(n_b) + "_" + str(n_c) + ".cssr", 'w') as text: # writing into file
-            coordinates[2][0] = str(int(coordinates[2][0])*2)
-            for line in coordinates: # non-coordinate information
+    n_a = trialIndices[0]
+    n_b = trialIndices[1]
+    n_c = trialIndices[2]
+    trialStructure = f[:-5] + "_trial_" + str(n_a) + "_" + str(n_b) + "_" + str(n_c) + ".cssr"
+    newCoordinates = coordTranslation(shiftDistance/float(coordinatesArray[0][0])*n_a, shiftDistance/float(coordinatesArray[0][1])*n_b, shiftDistance/float(coordinatesArray[0][2])*n_c, coordinatesArray[4:]) 
+    if checkOverlap(overlapRadius, newCoordinates, coordinatesArray[4:], float(coordinatesArray[0][0]), float(coordinatesArray[0][1]), float(coordinatesArray[0][2]), radians(float(coordinatesArray[1][0])), radians(float(coordinatesArray[1][1])), radians(float(coordinatesArray[1][2]))):
+        print "No overlap detected for 2-fold interpenetrated trial structure with indices " + str(trialIndices) + "."
+        with open(outputfile, 'a') as text: 
+            text.write("No overlap detected for 2-fold interpenetrated trial structure with indices " + str(trialIndices) + "\n")
+        with open(trialStructure, 'w') as text: # writing into file
+            coordinatesArray[2][0] = str(int(coordinatesArray[2][0])*2)
+            for line in coordinatesArray: # non-coordinate information
                 text.write(' '.join(line) + "\n")
-            coordinates[2][0] = str(int(coordinates[2][0])/2)
-            for index, line in enumerate(newCoords):
-                line[0] = str(index + 1 + int(coordinates[2][0]))
+            coordinatesArray[2][0] = str(int(coordinatesArray[2][0])/2)
+            for index, line in enumerate(newCoordinates):
+                line[0] = str(index + 1 + int(coordinatesArray[2][0]))
                 text.write(' '.join(line) + "\n")
+        return True
     else:
-        print "Overlap detected for 2-fold interpenetrated trial structure " + str(n_a) + "_" + str(n_b) + "_" + str(n_c) + "."
-        with open("output.txt", 'a') as text: 
-            text.write("Overlap detected for 2-fold interpenetrated trial structure " + str(n_a) + "_" + str(n_b) + "_" + str(n_c) + "\n")
+        print "Overlap detected for 2-fold interpenetrated trial structure with indices " + str(trialIndices) + "."
+        with open(outputfile, 'a') as text: 
+            text.write("Overlap detected for 2-fold interpenetrated trial structure with indices " + str(trialIndices) + "\n")
+        return False
 
-def generateHigherInterpenetrated(shiftDistance, n_a, n_b, n_c, diamInclSphere, overlapRadius, coordinates): # Generates n-interpenetrated structures for the structure with minimal surface area.
-    newCoords = list()
-    for n in range(1, int(ceil(diamInclSphere/(shiftDistance*(n_a**2+n_b**2+n_c**2)**0.5)))):
-        newCoords += coordTranslation(shiftDistance/float(coordinates[0][0])*n_a*n, shiftDistance/float(coordinates[0][1])*n_b*n, shiftDistance/float(coordinates[0][2])*n_c*n, coordinates[4:]) # coordinate information
-        if checkOverlap(overlapRadius, newCoords, coordinates[4:], float(coordinates[0][0]), float(coordinates[0][1]), float(coordinates[0][2]), radians(float(coordinates[1][0])), radians(float(coordinates[1][1])), radians(float(coordinates[1][2]))):
-            print "No overlap detected for " + str(n+1) + "-fold interpenetrated trial structure " + str(n_a) + "_" + str(n_b) + "_" + str(n_c) + "."
-            coordinates[2][0] = str(int(coordinates[2][0])*(n+1))
-            with open("output.txt", 'a') as text:
-                text.write("Generating higher-level interpenetrated structures, where the optimal displacement is " + str(n_a) + "_" + str(n_b) + "_" + str(n_c) + "\n")
-            with open(f[:-5] + "_interp_" + str(n+1) + "_trial_" + str(n_a) + "_" + str(n_b) + "_" + str(n_c) + ".cssr", 'w') as text: # writing into file
-                for line in coordinates: # non-coordinate information
+def generateHigherLevelInterpenetrated(shiftDistance, minIndices, maxLatticeVector, overlapRadius, coordinatesArray): # Generates n-interpenetrated structures for the structure with minimal surface area.
+    n_a = minIndices[0]
+    n_b = minIndices[1]
+    n_c = minIndices[2]
+    newCoordinates = list()
+    for n in range(1, int(ceil(maxLatticeVector/(shiftDistance*(n_a**2+n_b**2+n_c**2)**0.5)))):
+        higherLevelIndices_a = n_a * n
+        higherLevelIndices_b = n_b * n
+        higherLevelIndices_c = n_c * n
+        higherLevelIndices = [higherLevelIndices_a, higherLevelIndices_b, higherLevelIndices_c]
+        newCoordinates += coordTranslation(shiftDistance/float(coordinatesArray[0][0])*higherLevelIndices_a, shiftDistance/float(coordinatesArray[0][1])*higherLevelIndices_b, shiftDistance/float(coordinatesArray[0][2])*higherLevelIndices_c, coordinatesArray[4:]) 
+        if checkOverlap(overlapRadius, newCoordinates, coordinatesArray[4:], float(coordinatesArray[0][0]), float(coordinatesArray[0][1]), float(coordinatesArray[0][2]), radians(float(coordinatesArray[1][0])), radians(float(coordinatesArray[1][1])), radians(float(coordinatesArray[1][2]))):
+            print "No overlap detected for " + str(n+1) + "-fold interpenetrated trial structure with indices " + str(higherLevelIndices) + "!"
+            with open(outputfile, 'a') as text: 
+                text.write("No overlap detected for " + str(n+1) + "-fold interpenetrated trial structure with indices " + str(higherLevelIndices) + "! \n")
+            coordinatesArray[2][0] = str(int(coordinatesArray[2][0])*(n+1))
+            higherLevelInterpStructure = f[:-5] + "_interp_" + str(n+1) + "_indices_" + str(higherLevelIndices_a) + "_" + str(higherLevelIndices_b) + "_" + str(higherLevelIndices_c) + ".cssr"
+            with open(higherLevelInterpStructure, 'w') as text: # writing into file
+                for line in coordinatesArray: # non-coordinate information
                     text.write(' '.join(line) + "\n")
-                coordinates[2][0] = str(int(coordinates[2][0])/(n+1))
-                for index, line in enumerate(newCoords):
-                    line[0] = str(index + 1 + int(coordinates[2][0]))
+                coordinatesArray[2][0] = str(int(coordinatesArray[2][0])/(n+1))
+                for index, line in enumerate(newCoordinates):
+                    line[0] = str(index + 1 + int(coordinatesArray[2][0]))
                     text.write(' '.join(line) + "\n")
-            subprocess.call("~/Dropbox\ \(LSMO\)/Research/Zeo++/zeo/trunk/network -cif " + f[:-5] + "_interp_" + str(n+1) + "_trial_" + str(n_a) + "_" + str(n_b) + "_" + str(n_c) + ".cssr", shell=True) #Rocio
+            subprocess.call("~/Dropbox\ \(LSMO\)/Research/Zeo++/zeo/trunk/network -cif " + higherLevelInterpStructure, shell=True) 
         else:
-            print "Overlap detected for " + str(n+1) + "-fold interpenetrated trial structure " + str(n_a) + "_" + str(n_b) + "_" + str(n_c) + "."
-            with open("output.txt", 'a') as text: 
-                text.write("Overlap detected for " + str(n+1) + "-fold interpenetrated trial structure " + str(n_a) + "_" + str(n_b) + "_" + str(n_c) + "\n")
+            print "Overlap detected for " + str(n+1) + "-fold interpenetrated trial structure with indices " + str(higherLevelIndices) + "."
+            with open(outputfile, 'a') as text: 
+                text.write("Overlap detected for " + str(n+1) + "-fold interpenetrated trial structure with indices " + str(higherLevelIndices) + "\n")
 
 files = [f for f in os.listdir(".") if f.endswith(".cssr")] # cssr files
-with open("output.txt", 'w') as text: # Prints time taken into a text file, 'output.txt'
-    text.write("Beginning the program at " + str(time.localtime(None)) + "\n")
-    text.write("parameters: shiftDistance, overlapRadius = " + str(shiftDistance) + ", " + str(overlapRadius) + ", " + str(proberad) + ", " + str(trials) + ", " + str(useVol) + "\n")
 for f in files:
-    with open("output.txt", 'a') as text: # Prints time taken into a text file, 'output.txt'
-        text.write(f + "\n")
+    outputfile=string(f[:-5]) + "_output.txt"
+    with open(outputfile, 'w') as text: 
+        text.write("Beginning the program at " + str(time.localtime(None)) + "\n")
+        text.write("Parameters: shiftDistance, overlapRadius = " + str(shiftDistance) + ", " + str(overlapRadius) + "\n")
+        text.write("Structure: " + f + "\n")
     with open(f, 'r') as text: # reading file
-        textfile = list(list(line.split()) for line in text.read().split('\n')) # makes a nested array of text elements; textfile[line][word]
-        textfile.pop() # removes newline at the end of the file
-    with open("output.txt", 'a') as text: 
-        text.write("Computing the diameter of the largest included sphere: " + str(diamInclSphere) + " A \n")
+        coordinatesArray = list(list(line.split()) for line in text.read().split('\n')) # makes a nested array of text elements; textfile[line][word]
+        coordinatesArray.pop() # removes newline at the end of the file
+    latticeVector_a, latticeVector_b, latticeVector_c =  getLatticeVectors(f)
+    with open(outputfile, 'a') as text:
+        text.write("Lattice vectors:" + " \n")
+        text.write("a = " + str(latticeVector_a) + " A \n")
+        text.write("b = " + str(latticeVector_b) + " A \n")
+        text.write("c = " + str(latticeVector_c) + " A \n")
     t0 = time.time()
-    with open("output.txt", 'a') as text: 
-        text.write("Generating interpenetrated structures and checking overlap:\n")
-### TO DO: change this loop
-    for n_a in range(int(ceil(diamInclSphere/shiftDistance/2))):
-        for n_b in range(int(ceil(diamInclSphere/shiftDistance/2))):
-            for n_c in range(int(ceil(diamInclSphere/shiftDistance/2))):
-                generateInterpenetrated(shiftDistance, n_a, n_b, n_c, overlapRadius, textfile)
+    with open(outputfile, 'a') as text: 
+        text.write("Generating interpenetrated structures and checking overlap\n")
+    minIndices = [int(ceil(latticeVector_a)), int(ceil(latticeVector_b)), int(ceil(latticeVector_c))]
+    minIndicesMagnitude = sqrt(minIndices[0]**2 + minIndices[1]**2 + minIndices[2]**2)
+    for n_a in range(int(ceil(latticeVector_a))):
+        for n_b in range(int(ceil(latticeVector_b))):
+            for n_c in range(int(ceil(latticeVector_c))):
+                trialIndices = [n_a, n_b, n_c]
+                IndicesMagnitude = sqrt((n_a*0.25)**2 + (n_b*0.25)**2 + (n_c*0.25)**2)
+                if IndicesMagnitude > minIndicesMagnitude:
+                    break
+                elif IndicesMagnitude == minIndicesMagnitude && generateInterpenetrated(shiftDistance, trialIndices, overlapRadius, coordinatesArray) == True:
+                    with open(outputfile, 'a') as text:
+                        text.write("Same magnitude of displacement for trial structures " + str(trialIndices) + " and " + str(minIndices) + " (magnitude: " + str(IndicesMagnitude) + " A) \n")
+                        minIndices = trialIndices 
+                        minIndicesMagnitude = sqrt(minIndices[0]**2 + minIndices[1]**2 + minIndices[2]**2)
+                elif generateInterpenetrated(shiftDistance, trialIndices, overlapRadius, coordinatesArray) == True:
+                    minIndices = trialIndices 
+                    minIndicesMagnitude = sqrt(minIndices[0]**2 + minIndices[1]**2 + minIndices[2]**2)
+                    with open(outputfile, 'a') as text:
+                        text.write("New indices for best trial structure " + str(minIndices) + " \n")
+                else:
+                    pass
     t1 = time.time()
-    with open("output.txt", 'a') as text: # Prints time taken into a text file, 'output.txt'
-        text.write(str((t1-t0)/60) + " min for checking overlap of 2-fold interpenetrated structures.\n")
-    try:
-        if useVol:
-            indices = indexMinVol([g for g in os.listdir(".") if g.startswith(f[:-5]) and g.endswith(".cssr") and g != f])
-            with open("output.txt", 'a') as text: #Rocio
-                text.write("Indices of the best 2-fold interp trial structure: " + str(indices) + "\n")
-        else:
-            indices = indexMinSA([g for g in os.listdir(".") if g.startswith(f[:-5]) and g.endswith(".cssr") and g != f])
-            with open("output.txt", 'a') as text: #Rocio
-                text.write("Indices of the best 2-fold interp trial structure: " + str(indices) + "\n")
-        t2 = time.time()
-        with open("output.txt", 'a') as text:
-            text.write(str((t2-t1)/60) + " min for computing pore volume/surface area for 2-interpenetrated structures.\n")
-            text.write("Generating higher-level interpenetrated structures.\n")
-        generateInterpenetrated2(shiftDistance, int(indices[0]), int(indices[1]), int(indices[2]), diamInclSphere, overlapRadius, textfile)
-    except:
-        print "No successful interpenetrated structures for " + str(f) + "\n"
-        with open("output.txt", 'a') as text:
-            text.write("NO SUCCESSFULLY GENERATED INTERPENETRATED STRUCTURES\n")
+    with open(outputfile, 'a') as text: 
+        text.write("Time elapsed for finding the best 2-fold interpenetrated structure: " + str((t1-t0)/60) + " min \n")
+    if minIndices != [int(ceil(latticeVector_a)), int(ceil(latticeVector_b)), int(ceil(latticeVector_c))]:
+        with open(outputfile, 'a') as text: 
+            text.write("Generating higher-level interpenetrated structures and checking overlap\n")
+        maxLatticeVector = max(latticeVector_a, latticeVector_b, latticeVector_c)
+        generateHigherLevelInterpenetrated(shiftDistance, minIndices, maxLatticeVector, overlapRadius, coordinatesArray)
+    else:
+        print "No successful interpenetrated structures found for " + str(f) + "\n"
+        with open(outputfile, 'a') as text: 
+            text.write("No successful interpenetrated structures found for " + str(f) + "\n")
+    with open(outputfile, 'a') as text:
+        text.write("Program complete at " + str(time.localtime(None)) + "\n")
 
-### FOR DEBUGGING: Converts all .cssr files for trial structures to cif format
-#with open("output.txt", 'a') as text: # Prints time taken into a text file, 'output.txt'
-#    text.write("Converting all cssr files into cif files\n")
+### FOR DEBUGGING: uncomment three-lines below to converts all *.cssr files to cif format (including trial structures)
 #files = [f for f in os.listdir(".") if f.endswith(".cssr")]
 #for f in files: # Converts all cssr files into cif files.
 #    subprocess.call("~/Dropbox\ \(LSMO\)/Research/Zeo++/zeo/trunk/network -cif " + f, shell=True)
 
-with open("output.txt", 'a') as text: # Prints time taken into a text file, 'output.txt'
-    text.write("Program complete at " + str(time.localtime(None)) + "\n")
