@@ -1,21 +1,24 @@
 from math import ceil, radians, cos, sin, sqrt
-import copy, glob, os, subprocess, time, re
+import copy, glob, os, subprocess, time
 
 ### TO DO: lose dependency on Zeo++
 ### TO DO: make code versatile, so that it could read fractional coordinates or Cartesian from a .cssr
 ### TO DO: Fix the description, as this program is not for using the surface area or pore volume anymore
-### TO DO: print individual output files for each structure
 ### TO DO: improve the output so that there is not too much info but also enough to debug
-### TO DO: delete .cif file conversion in script, write a SEPARATE python script to convert cifs to cssr using Zeo++
-
-# Program assumes that fractional coordinates are given.
-# Each axis is traversed independently.
+### TO DO: delete .cif file conversion in script, write a separate python script to convert cifs to cssr using Zeo++
+### TO DO: add a flag to convert to cif or not (using separate script as mentioned above)
+### TO DO: improve comments
 
 # SET VARIABLES HERE
-# shiftDostamce is the displacement used to generate the interpenetrated structures
+# shiftDistance is the displacement used to generate the interpenetrated structures
 # overlapRadius is the hard-sphere radius used to determine if a trial structure has overlapping atoms
+# saveTrialStructures determines if test interpenetrated structures are saved or not. for debugging, use saveTrialStructures == True
+# fractionalCoords is True if .cssr input is in fractional coordinates, False if in Cartesian.
 
-shiftDistance, overlapRadius = 0.5, 1.05
+shiftDistance = 0.5
+overlapRadius = 1.05
+saveTrialStructures = False
+fractionalCoords = True 
 
 def coordTranslation(x, y, z, oldList): # Translates atoms by set distance, wrapping them around if they go past the unit cell boundaries.
     newList = copy.deepcopy(oldList)
@@ -102,14 +105,15 @@ def generateInterpenetrated(shiftDistance, trialIndices, overlapRadius, coordina
         print "No overlap detected for 2-fold interpenetrated trial structure with indices " + str(trialIndices) + "."
         with open(outputfile, 'a') as text: 
             text.write("No overlap detected for 2-fold interpenetrated trial structure with indices " + str(trialIndices) + "\n")
-        with open(trialStructure, 'w') as text: # writing into file
-            coordinatesArray[2][0] = str(int(coordinatesArray[2][0])*2)
-            for line in coordinatesArray: # non-coordinate information
-                text.write(' '.join(line) + "\n")
-            coordinatesArray[2][0] = str(int(coordinatesArray[2][0])/2)
-            for index, line in enumerate(newCoordinates):
-                line[0] = str(index + 1 + int(coordinatesArray[2][0]))
-                text.write(' '.join(line) + "\n")
+        if saveTrialStructures == True:
+            with open(trialStructure, 'w') as text: # writing into file
+                coordinatesArray[2][0] = str(int(coordinatesArray[2][0])*2)
+                for line in coordinatesArray: # non-coordinate information
+                    text.write(' '.join(line) + "\n")
+                coordinatesArray[2][0] = str(int(coordinatesArray[2][0])/2)
+                for index, line in enumerate(newCoordinates):
+                    line[0] = str(index + 1 + int(coordinatesArray[2][0]))
+                    text.write(' '.join(line) + "\n")
         return True
     else:
         print "Overlap detected for 2-fold interpenetrated trial structure with indices " + str(trialIndices) + "."
@@ -146,11 +150,6 @@ def generateHigherLevelInterpenetrated(shiftDistance, minIndices, maxLatticeVect
             print "Overlap detected for " + str(n+1) + "-fold interpenetrated trial structure with indices " + str(higherLevelIndices) + "."
             with open(outputfile, 'a') as text: 
                 text.write("Overlap detected for " + str(n+1) + "-fold interpenetrated trial structure with indices " + str(higherLevelIndices) + "\n")
-
-def purge(dir, pattern):
-    for f in os.listdir(dir):
-        if re.search(pattern, f):
-            os.remove(os.path.join(dir, f))
 
 files = [f for f in os.listdir(".") if f.endswith(".cssr")] # cssr files
 for f in files:
@@ -207,7 +206,7 @@ for f in files:
             text.write("No successful interpenetrated structures found for " + str(f) + "\n")
     with open(outputfile, 'a') as text:
         text.write("Program complete at " + str(time.localtime(None)) + "\n")
-    # purge(., *trial*.cssr) 
+
 
 ### FOR DEBUGGING: uncomment three-lines below to converts all *.cssr files to cif format (including trial structures)
 #files = [f for f in os.listdir(".") if f.endswith(".cssr")]
