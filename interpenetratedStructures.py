@@ -1,4 +1,4 @@
-from file-conversion.py import convertCssrToCif
+from fileConversion import convertCssrToCif
 from math import ceil, radians, cos, sin, sqrt
 import copy, glob, os, subprocess, time
 
@@ -158,7 +158,7 @@ files = [f for f in os.listdir(".") if f.endswith(".cssr")] # cssr files
 for f in files:
     outputfile = str(f[:-5]) + "_output.txt"
     with open(outputfile, 'w') as text: 
-        text.write("Beginning the program at " + str(time.localtime("%A, %d. %B %Y %I:%M%p")) + "\n")
+        text.write("Beginning the program " + str(time.strftime("%A %d %B %Y, %I:%M%p")) + "\n")
         text.write("Parameters: shiftDistance, overlapRadius = " + str(shiftDistance) + ", " + str(overlapRadius) + "\n")
         text.write("Structure: " + f + "\n")
     with open(f, 'r') as text: # reading file
@@ -208,4 +208,4 @@ for f in files:
         with open(outputfile, 'a') as text: 
             text.write("No successful interpenetrated structures found for " + str(f) + "\n")
     with open(outputfile, 'a') as text:
-        text.write("Program complete at " + str(time.localtime("%A, %d. %B %Y %I:%M%p")) + "\n")
+        text.write("Program complete " + str(time.strftime("%A %d %B %Y, %I:%M%p")) + "\n")
