@@ -14,7 +14,7 @@ from fileConversion import convertCssrToCif
 # set saveTrialStructures to True to save 'trial' interpenetrated structures. saveTrialStructures == True recommended for debugging.
 # set fractionalCoords to True if .cssr input is in fractional coordinates, set to False if in Cartesian.
 # set cssrToCif to True to convert the interpenetrated structures to .cif file format from the default .cssr
-shiftDistance = 0.1
+shiftDistance = 0.2
 overlapRadius = 1.00 # use 1.05 for C-C bonds, 1.0 otherwise
 saveTrialStructures = False
 fractionalCoords = True 
