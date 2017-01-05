@@ -2,12 +2,6 @@ import copy, glob, os, subprocess, time
 from math import ceil, radians, cos, sin, sqrt
 from fileConversion import convertCssrToCif
 
-### TO DO: lose dependency on Zeo++
-### TO DO: make code versatile, so that it could read fractional coordinates or Cartesian from a .cssr
-### TO DO: Fix the description, as this program is not for using the surface area or pore volume anymore
-### TO DO: improve the output so that there is not too much info but also enough to debug
-### TO DO: improve comments
-
 ### SET VARIABLES HERE ###
 # shiftDistance is the displacement used to generate the interpenetrated structures
 # overlapRadius is the hard-sphere radius used to determine if a trial structure has overlapping atoms
