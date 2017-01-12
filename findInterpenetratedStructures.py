@@ -80,7 +80,7 @@ def checkOverlap(overlapRadius, list1, list2, a, b, c, alpha, beta, gamma): # Ch
                 return False
     return True
 
-def getLatticeVectors(file): # Returns the diameter of the largest included sphere in a framework.
+def getLatticeVectors(file):
      with open(file) as data:
          elements = data.readline().split()
          a = float(elements[0])
