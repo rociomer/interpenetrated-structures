@@ -32,33 +32,29 @@ def coordTranslation(x, y, z, oldList): # Translates atoms by set distance, wrap
             line[4] = str(float(line[4]) + z)
     return newList
 
+def getBoundaryAtoms(allAtoms, a, b, c):
+    boundaryAtoms = [] 
+    for line in allAtoms:
+        if float(line[2]) >= 1-overlapRadius/a:
+            boundaryAtoms.append(copy.deepcopy(line))
+            boundaryAtoms[-1][2] = str(float(boundaryAtoms[-1][2])-1)
+        elif float(line[3]) >= 1-overlapRadius/b:
+            boundaryAtoms.append(copy.deepcopy(line))
+            boundaryAtoms[-1][3] = str(float(boundaryAtoms[-1][3])-1)
+        elif float(line[4]) >= 1-overlapRadius/c:
+            boundaryAtoms.append(copy.deepcopy(line))
+            boundaryAtoms[-1][4] = str(float(boundaryAtoms[-1][4])-1)
+        elif float(line[2]) <= overlapRadius/a or float(line[3]) <= overlapRadius/b or float(line[4]) <= overlapRadius/c:
+            boundaryAtoms.append(copy.deepcopy(line))
+     return boundaryAtoms
+
 def checkOverlap(overlapRadius, list1, list2, a, b, c, alpha, beta, gamma): # Checks for overlap between atoms; returns True if no overlap and False otherwise.
-    newlist1, newlist2, newlist3, newlist4 = copy.deepcopy(list1), copy.deepcopy(list2), list(), list()
+    newlist1 = copy.deepcopy(list1)
+    newlist2 = copy.deepcopy(list2)
     # newlist3 and newlist4 - boundary atoms
-    for line in newlist1:
-        if float(line[2]) >= 1-overlapRadius/a:
-            newlist3.append(copy.deepcopy(line))
-            newlist3[-1][2] = str(float(newlist3[-1][2])-1)
-        elif float(line[3]) >= 1-overlapRadius/b:
-            newlist3.append(copy.deepcopy(line))
-            newlist3[-1][3] = str(float(newlist3[-1][3])-1)
-        elif float(line[4]) >= 1-overlapRadius/c:
-            newlist3.append(copy.deepcopy(line))
-            newlist3[-1][4] = str(float(newlist3[-1][4])-1)
-        elif float(line[2]) <= overlapRadius/a or float(line[3]) <= overlapRadius/b or float(line[4]) <= overlapRadius/c:
-            newlist3.append(copy.deepcopy(line))
-    for line in newlist2:
-        if float(line[2]) >= 1-overlapRadius/a:
-            newlist4.append(copy.deepcopy(line))
-            newlist4[-1][2] = str(float(newlist4[-1][2])-1)
-        elif float(line[3]) >= 1-overlapRadius/b:
-            newlist4.append(copy.deepcopy(line))
-            newlist4[-1][3] = str(float(newlist4[-1][3])-1)
-        elif float(line[4]) >= 1-overlapRadius/c:
-            newlist4.append(copy.deepcopy(line))
-            newlist4[-1][4] = str(float(newlist4[-1][4])-1)
-        elif float(line[2]) <= overlapRadius/a or float(line[3]) <= overlapRadius/b or float(line[4]) <= overlapRadius/c:
-            newlist4.append(copy.deepcopy(line))
+    newlist3 = getBoundaryAtoms(newlist1, a, b, c)
+    newlist4 = getBoundaryAtoms(newlist2, a, b, c)
+    # Convert x, y, z from fractional to Cartesian for all lists of coordinates
     for line in newlist1 + newlist2 + newlist3 + newlist4:
         a_x, b_x, b_y = float(line[2])*a, float(line[3])*cos(gamma)*b, float(line[3])*sin(gamma)*b
         c_x, c_y = float(line[4])*cos(beta)*c, float(line[4])*(cos(alpha)-cos(beta)*cos(gamma))/sin(gamma)*c
@@ -147,6 +143,8 @@ def generateHigherLevelInterpenetrated(shiftDistance, minIndices, maxLatticeVect
             with open(outputfile, 'a') as text: 
                 text.write("Overlap detected for " + str(n+1) + "-fold interpenetrated trial structure with indices " + str(higherLevelIndices) + "\n")
 
+
+#Carry out routine
 files = [f for f in os.listdir(".") if f.endswith(".cssr")] # cssr files
 for f in files:
     outputfile = str(f[:-5]) + "_output.txt"
