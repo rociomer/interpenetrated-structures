@@ -56,7 +56,7 @@ def getBoundaryAtoms(allAtoms, a, b, c):
         elif float(line[2]) <= overlapRadius/a or \
 float(line[3]) <= overlapRadius/b or float(line[4]) <= overlapRadius/c:
             boundaryAtoms.append(copy.deepcopy(line))
-     return boundaryAtoms
+    return boundaryAtoms
 
 def checkOverlap(overlapRadius, list1, list2, a, b, c, alpha, beta, gamma): 
 # check for overlap between atoms; return True if no overlap, False otherwise.

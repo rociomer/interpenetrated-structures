@@ -13,7 +13,6 @@
 echo "Job ID ${JOB_ID} "
 echo "Running on host: "
 echo "    $(hostname)"
-echo "    with ${num_cpu} cpus."
 
 JOB_DIR=/scratch/$USER/${JOB_ID}
 echo "in directory: "

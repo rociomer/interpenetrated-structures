@@ -8,6 +8,6 @@ do
   cp interp-generator-submit.sh ${i%.cssr}/.
   cd ${i%.cssr}
   qsub -N ${i%.cssr} interp-generator-submit.sh
-  sleep 1m
+  sleep 2m
   cd ../
 done
