@@ -12,6 +12,8 @@ https://github.com/rociomer/interpenetrated-structures
 None
 
 ## Instructions
+(Note: will need Zeo++ to convert files from CSSR to CIF format)
+
 Copy fileConversion.py and findInterpenetratedStructures.py to
 directory with CSSR files for structures to interpenetrate. If necessary,
 modify the path to Zeo++ at the top of fileConversion.py. Then modify any 

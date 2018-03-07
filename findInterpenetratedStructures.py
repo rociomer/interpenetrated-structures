@@ -6,20 +6,21 @@ from fileConversion import convertCssrToCif
 
 #                      findInterpenetratedStructures.py
 # This program generates potential interpenetrated structures for all CSSR files
-#  in the working directory. Attempts at interpenetrated structures are made 
-#  using the displacement set by shiftDistance, and then the structure is
-#  checked for overlapping atoms using the hard-sphere radius set by
-#  overlapRadius. Set saveTrialStructures to True to save trial interpenetrated 
-#  structures (saveTrialStructures == True recommended for debugging). Set 
-#  fractionalCoords to True if CSSR input is in fractional coordinates, set to 
-#  False if in Cartesian. Set cssrToCif to True to convert the interpenetrated 
-#  structures to CIF file format from the default CSSR.
+#   in the working directory. Attempts at interpenetrated structures are made 
+#   using the displacement set by shiftDistance, and then the structure is
+#   checked for overlapping atoms using the hard-sphere radius set by
+#   overlapRadius. Set saveTrialStructures to True to save trial interpenetrated 
+#   structures (saveTrialStructures == True recommended for debugging). Set 
+#   fractionalCoords to True if CSSR input is in fractional coordinates, set to 
+#   False if in Cartesian. Set cssrToCif to True to convert the interpenetrated 
+#   structures to CIF file format from the default CSSR.
 
 shiftDistance = 0.2
 overlapRadius = 1.53 # in lammps_interface, C covalent radius set to 0.76
 saveTrialStructures = False
 fractionalCoords = True 
 cssrToCif = True
+
 ################################ END VARIABLES #################################
 
 def coordTranslation(x, y, z, oldList): 
@@ -53,8 +54,11 @@ def getBoundaryAtoms(allAtoms, a, b, c):
         elif float(line[4]) >= 1-overlapRadius/c:
             boundaryAtoms.append(copy.deepcopy(line))
             boundaryAtoms[-1][4] = str(float(boundaryAtoms[-1][4]) - 1)
-        elif float(line[2]) <= overlapRadius/a or \
-float(line[3]) <= overlapRadius/b or float(line[4]) <= overlapRadius/c:
+        elif (
+            float(line[2]) <= overlapRadius/a 
+            or float(line[3]) <= overlapRadius/b 
+            or float(line[4]) <= overlapRadius/ci
+        ):
             boundaryAtoms.append(copy.deepcopy(line))
     return boundaryAtoms
 
@@ -71,10 +75,18 @@ def checkOverlap(overlapRadius, list1, list2, a, b, c, alpha, beta, gamma):
         b_x = float(line[3]) * cos(gamma) * b
         b_y = float(line[3]) * sin(gamma) * b
         c_x = float(line[4]) * cos(beta) * c
-        c_y = float(line[4]) * (cos(alpha) - cos(beta) * cos(gamma)) / \
-sin(gamma) * c
-        c_z = float(line[4]) * sqrt(1 - cos(alpha)**2 - cos(beta)**2 - \
-cos(gamma)**2 + 2 * cos(alpha) * cos(beta) * cos(gamma)) / sin(gamma) * c
+        c_y = (
+            float(line[4]) * 
+            (cos(alpha) - cos(beta) * cos(gamma)) / 
+            sin(gamma) * c
+        )
+        c_z = (
+            float(line[4]) * 
+            sqrt(
+                1 - cos(alpha)**2 - cos(beta)**2 - cos(gamma)**2 + 
+                2 * cos(alpha) * cos(beta) * cos(gamma)
+            ) / sin(gamma) * c
+        )
         line[2] = str(a_x + b_x + c_x)
         line[3] = str(b_y + c_y)
         line[4] = str(c_z)
