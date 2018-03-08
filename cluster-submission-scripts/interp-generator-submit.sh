@@ -4,10 +4,10 @@
 
 # Email at beginning and end of job.
 #$ -m n 
-#$ -M rocio@berkeley.edu 
+#$ -M 
 
-# Run the simulation only on one of the following nodes: compute-0-1 compute-0-10 compute-0-7 compute-0-13 compute-0-8
-#$ -l h="compute-0-1|compute-0-10|compute-0-7|compute-0-13|compute-0-8|compute-0-11|compute-0-12|compute-0-14|compute-0-2|compute-0-4|compute-0-5|compute-0-6|compute-0-9"
+# Run the simulation only on the following nodes: 
+#$ -l h="compute-0-1|compute-0-10|compute-0-7|compute-0-13"
 
 # Copy files to scratch 
 echo "Job ID ${JOB_ID} "
