@@ -3,37 +3,36 @@
 #$ -q all*
 
 # Email at beginning and end of job.
-#$ -m n 
-#$ -M 
+#$ -m n
+#$ -M
 
-# Run the simulation only on the following nodes: 
+# Run the simulation only on the following nodes:
 #$ -l h="compute-0-1|compute-0-10|compute-0-7|compute-0-13"
 
-# Copy files to scratch 
+# Copy files to scratch
 echo "Job ID ${JOB_ID} "
 echo "Running on host: "
 echo "    $(hostname)"
 
-JOB_DIR=/scratch/$USER/${JOB_ID}
+JOB_DIR=/scratch/${USER}/${JOB_ID}
 echo "in directory: "
-echo "    $JOB_DIR"
+echo "    ${JOB_DIR}"
 echo "submission directory: "
-echo "    $SGE_O_WORKDIR"
+echo "    ${SGE_O_WORKDIR}"
 
-mkdir -p $JOB_DIR
-cp * $JOB_DIR/.
+mkdir -p ${JOB_DIR}
+cp * ${JOB_DIR}/.
 
-cd $JOB_DIR
+cd ${JOB_DIR}
 
 # Run interpenetrated structures program
 module load python
-python2.7 findInterpenetratedStructures.py
+python2.7 find_interp_structures.py
 
-cd $SGE_O_WORKDIR
+cd ${SGE_O_WORKDIR}
 
 # Copy files back to working directory
-for i in $JOB_DIR/*
-do
-  mv $i .
+for file_to_move in ${JOB_DIR}/*; do
+  mv ${file_to_move} .
 done
 

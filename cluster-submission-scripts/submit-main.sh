@@ -4,17 +4,16 @@
 #   directory, and submitting the job from within that directory (so as to
 #   run on many nodes)
 
-for i in *.cssr;
-do
-  mkdir ${i%.cssr}
+for cssr_file in *.cssr; do
+  mkdir ${cssr_file%.cssr}
 
-  mv $i ${i%.cssr}/.
-  cp *.py ${i%.cssr}/.
-  cp interp-generator-submit.sh ${i%.cssr}/.
+  mv ${cssr_file} ${cssr_file%.cssr}/.
+  cp *.py ${cssr_file%.cssr}/.
+  cp interp-generator-submit.sh ${cssr_file%.cssr}/.
 
-  cd ${i%.cssr}
+  cd ${cssr_file%.cssr}
 
-  qsub -N ${i%.cssr} interp-generator-submit.sh
+  qsub -N ${cssr_file%.cssr} interp-generator-submit.sh
 
   sleep 2m
 
